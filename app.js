@@ -19,11 +19,12 @@ app.post("/api/user/register",async(req,res)=>{
     if(exist){
         res.send("user already exists")
     }
+    const hashpassword=await bcrypt.hash(password,10)
     const usersschema=new user({
         ID:uuidv4(),
         username,
         email,
-        password,
+        password:hashpassword,
         created_date
     })
     const info=await usersschema.save();
