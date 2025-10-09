@@ -6,7 +6,6 @@ const post=require("./models/post.js")
 const middleware=require("./middleware.js")
 const Comment = require("./models/comment.js")
 const bcrypt=require('bcrypt')
-
 const { v4: uuidv4 } = require('uuid');
 const user=require("./models/user.js")
 const comment = require('./models/comment.js')
@@ -36,6 +35,11 @@ app.post("/api/user/login",async(req,res)=>{
     const exist=await user.findOne({email})
     if(!exist){
         return res.send("user doeant exits")
+    }
+    const hashpassword=await bycrypt.hsh(password,10)
+    const ismattch=await bcrypt.compare(hashpassword,exist.hashpassword)
+    if(!ismattch){
+        res.send("wrong passowrd")
     }
     const payload={
         user:{
