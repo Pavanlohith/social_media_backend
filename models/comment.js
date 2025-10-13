@@ -1,5 +1,7 @@
 const mongoose=require('mongoose');
 const cmntschema=new mongoose.Schema({
+    ID:String,
+    userid:String,
     comment:{
         type:String,
         required:true,

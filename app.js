@@ -36,14 +36,14 @@ app.post("/api/user/login",async(req,res)=>{
     if(!exist){
         return res.send("user doeant exits")
     }
-    const hashpassword=await bycrypt.hsh(password,10)
-    const ismattch=await bcrypt.compare(hashpassword,exist.hashpassword)
+    const hashpassword=await bcrypt.hash(password,10)
+    const ismattch=await bcrypt.compare(password,exist.password)
     if(!ismattch){
         res.send("wrong passowrd")
     }
     const payload={
         user:{
-            id:exist._id
+            id:exist.ID
         }
     }
     jwt.sign(payload,"jwtsecret",{expiresIn:"9h"},(err,token)=>{
@@ -68,11 +68,13 @@ app.get("/api/user/profile",middleware,async(req,res)=>{
     }
 })
 //post part
-app.post("/api/posts",async(req,res)=>{
-    const{userid,caption,likes,created_date}=req.body;
+app.post("/api/posts",middleware,async(req,res)=>{
+    const userid=req.user.id;
+    
+    const{caption,likes,created_date}=req.body;
     const newpost=new post({
         ID:uuidv4(),
-        userid,
+        
         caption,
         likes,
         created_date
@@ -93,36 +95,47 @@ app.get("/api/posts/:id",async(req,res)=>{
    
     const id=req.params.id;
 
-    const x=await post.findOne({"userid":id});
+    const x=await post.findOne({"ID":id});
     res.send(x);
 
 })
 
 
-app.patch("/api/posts/:uid",middleware,async(req,res)=>{
-    const uid=req.params.uid;
-     const exist=await user.findById(req.user.id)
-        if(uid!=req.user.id)
-res.send("you arenot allowed to update")
-     const x=await post.findOneAndUpdate({"userid":uid},req.body);
+
+app.patch("/api/posts/:pid",middleware,async(req,res)=>{
+ 
+    const pid=req.params.pid;
+    //  const exist=await user.findById(req.user.id)
+     let postdata=await post.findOne({"ID":pid})
+     if (postdata.userid!=req.user.id)
+
+        {
+            return res.send("you arenot allowed to update")
+        }
+     const x=await post.findOneAndUpdate({"ID":pid},req.body);
      res.send(x);
 
 })
-app.delete("/api/posts/:uid",middleware,async(req,res)=>{
-      const uid=req.params.uid;
-        const exist=await user.findById(req.user.id)
-        if(uid!=req.user.id)
-            res.send("you arenot allowed to delete")
+app.delete("/api/posts/delete/:pid",middleware,async(req,res)=>{
+      const pid=req.params.pid;
+        const postdata=await post.findOne({"ID":pid})
+        if(postdata.userid!==req.user.id){
 
-     const x=await post.findOneAndDelete({"userid":uid});
+        
+            return res.send("you arenot allowed to delete")
+        }
+     const x=await post.findOneAndDelete({"ID":pid});
      res.send(x);
 
 })
 
 //comment part
-app.post("/api/comment",async(req,res)=>{
+app.post("/api/comment",middleware,async(req,res)=>{
+    const userid=req.user.id;
     const{postid,comment,commented_date}=req.body;
     const newcmt=new Comment({
+        ID:uuidv4(),
+        
         postid,
         comment,
         commented_date,
@@ -133,18 +146,20 @@ app.post("/api/comment",async(req,res)=>{
 })
 app.get("/api/Comment/:id",async(req,res)=>{
       const id=req.params.id;
-    const x=await Comment.find({"postid":id});
+    const x=await Comment.find({"ID":id});
     res.send(x);
 
 
 })
-app.patch("/api/comment/update/:pid",async(req,res)=>{
+app.patch("/api/comment/update/:cid",middleware,async(req,res)=>{
     try{
-           const id=req.params.pid;
-             const exist=await user.findById(req.user.id)
-        if(pid!=req.user.id)
-res.send("you arenot allowed to update")
-          const x=await Comment.findOneAndUpdate({"postid":pid},req.body);
+           const cid=req.params.cid;
+          const cmntdata=await Comment.findOne({"ID":cid});
+          
+        if(cmntdata.userid!=req.user.id){
+       res.send("you arenot allowed to update")
+        }
+        const x=await Comment.findOneAndUpdate({"ID":cid},req.body);
          res.send(x);
 
     }
@@ -153,15 +168,17 @@ res.send("you arenot allowed to update")
         res.send(e);
     }
 })
-app.delete("/api/comment/delete/:pid",async(req,res)=>{
-      const pid=req.params.pid;
-      const exist=await user.findById(req.user.id)
-        if(pid!=req.user.id)
-res.send("you arenot allowed to delete")
-     const x=await Comment.findOneAndDelete({"postid":pid});
+app.delete("/api/comment/delete/:cid",middleware,async(req,res)=>{
+      const cid=req.params.cid;
+        const cmntdata=await Comment.findOne({"ID":cid});
+          
+         if(cmntdata.userid!=req.user.id){
+       res.send("you arenot allowed to delete")
+        }
+     const x=await Comment.findOneAndDelete({"ID":cid});
      res.send(x);
 
 })
-app.listen(6000,()=>{
+app.listen(8000,()=>{
     console.log("server connected succesfully")
 })
